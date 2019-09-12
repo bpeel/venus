@@ -97,7 +97,7 @@ urlbase = "https://api.telegram.org/bot" + apikey + "/"
 send_message_url = urlbase + "sendMessage"
 channel_name = "@blogaro"
 
-masto_url = "https://esperanto.masto.host/api/v1/statuses"
+masto_url = "https://tvitero.com/api/v1/statuses"
 
 try:
     with open(os.path.expanduser("~/.sent-links")) as f:
