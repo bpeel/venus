@@ -33,7 +33,27 @@ def send_message(args):
     except KeyError as e:
         raise SendMessageException(e)
 
-def send_entry(title, link):
+def send_toot(content):
+    try:
+        args = { 'status': content, 'language': 'eo' }
+        req = urllib.request.Request(masto_url,
+                                     json.dumps(args).encode('utf-8'))
+        req.add_header('Content-Type', 'application/json; charset=utf-8')
+        req.add_header('Authorization', 'Bearer ' + mastokey)
+        rep = json.load(io.TextIOWrapper(urllib.request.urlopen(req), 'utf-8'))
+    except urllib.error.URLError as e:
+        raise SendMessageException(e)
+    except json.JSONDecodeError as e:
+        raise SendMessageException(e)
+
+    try:
+        if 'id' not in rep:
+            raise SendMessageException("Unexpected response from "
+                                       "sendMessage request")
+    except KeyError as e:
+        raise SendMessageException(e)
+
+def send_to_telegram(title, link):
     args = {
         'chat_id' : channel_name,
         'text' : '<a href="{}">{}</a>'.format(html.escape(link, quote=True),
@@ -41,6 +61,13 @@ def send_entry(title, link):
         'parse_mode' : 'HTML'
     }
     send_message(args)
+
+def send_to_mastodon(title, link):
+    send_toot("{}\n\n{}".format(title, link))
+
+def send_entry(title, link):
+    send_to_telegram(title, link)
+    send_to_mastodon(title, link)
 
 def get_link(root):
     for link in root.findall("./{http://www.w3.org/2005/Atom}link"):
@@ -57,14 +84,20 @@ def get_link(root):
     return None
 
 conf_dir = os.path.expanduser("~/.esperantose")
-apikey_file = os.path.join(conf_dir, "apikey")
 
+apikey_file = os.path.join(conf_dir, "apikey")
 with open(apikey_file, 'r', encoding='utf-8') as f:
     apikey = f.read().rstrip()
+
+mastokey_file = os.path.join(conf_dir, "mastokey")
+with open(mastokey_file, 'r', encoding='utf-8') as f:
+    mastokey = f.read().rstrip()
 
 urlbase = "https://api.telegram.org/bot" + apikey + "/"
 send_message_url = urlbase + "sendMessage"
 channel_name = "@blogaro"
+
+masto_url = "https://esperanto.masto.host/api/v1/statuses"
 
 try:
     with open(os.path.expanduser("~/.sent-links")) as f:
