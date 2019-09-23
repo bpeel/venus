@@ -58,6 +58,7 @@ channel_name = "@tubarokomentoj"
 root = get_feed().getroot()
 
 best_date = 0
+messages = []
 
 for item in root.findall("./channel/item"):
     pub_date_element = item.find("./pubDate")
@@ -110,9 +111,14 @@ for item in root.findall("./channel/item"):
     elif title_element:
         parts.append("<b>{}</b>".format(title_text))
 
+    messages.append((pub_date, "\n\n".join(parts)))
+
+messages.sort()
+
+for pub_date, message in messages:
     args = {
         'chat_id' : channel_name,
-        'text': "\n\n".join(parts),
+        'text': message,
         'parse_mode' : 'HTML'
     }
 
