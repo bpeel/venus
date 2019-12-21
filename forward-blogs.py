@@ -11,6 +11,9 @@ import random
 import re
 import glob
 import xml.etree.ElementTree as ET
+import twitter
+
+twitter_api = None
 
 class SendMessageException(Exception):
     pass
@@ -65,9 +68,20 @@ def send_to_telegram(title, link):
 def send_to_mastodon(title, link):
     send_toot("{}\n\n{}".format(title, link))
 
+def send_to_twitter(title, link):
+    global twitter_api
+    if twitter_api is None:
+        twitter_api = twitter.Api(twitterkeys['api_key'],
+                                  twitterkeys['api_secret_key'],
+                                  twitterkeys['access_token'],
+                                  twitterkeys['access_token_secret'])
+
+    twitter_api.PostUpdate("{}\n{}".format(title, link))
+
 def send_entry(title, link):
     send_to_telegram(title, link)
     send_to_mastodon(title, link)
+    send_to_twitter(title, link)
 
 def get_link(root):
     for link in root.findall("./{http://www.w3.org/2005/Atom}link"):
@@ -92,6 +106,10 @@ with open(apikey_file, 'r', encoding='utf-8') as f:
 mastokey_file = os.path.join(conf_dir, "mastokey")
 with open(mastokey_file, 'r', encoding='utf-8') as f:
     mastokey = f.read().rstrip()
+
+twitterkeys_file = os.path.join(conf_dir, "twitterkeys")
+with open(twitterkeys_file, 'r', encoding='utf-8') as f:
+    twitterkeys = json.load(f)
 
 urlbase = "https://api.telegram.org/bot" + apikey + "/"
 send_message_url = urlbase + "sendMessage"
