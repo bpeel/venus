@@ -12,6 +12,8 @@ import re
 import glob
 import xml.etree.ElementTree as ET
 import twitter
+import datetime
+import dateutil.parser
 
 twitter_api = None
 
@@ -123,6 +125,9 @@ try:
 except FileNotFoundError:
     sent_links = set()
 
+now = datetime.datetime.now(datetime.timezone.utc)
+max_date_diff = datetime.timedelta(days=1)
+
 for fn in glob.glob(os.path.expanduser("~/planet/pscache/*")):
     if not os.path.isfile(fn):
         continue
@@ -142,6 +147,19 @@ for fn in glob.glob(os.path.expanduser("~/planet/pscache/*")):
         continue
 
     title = "".join(title.itertext())
+
+    updated = root.find("./{http://www.w3.org/2005/Atom}updated")
+    if updated is None:
+        continue
+
+    updated = "".join(updated.itertext())
+    try:
+        updated = dateutil.parser.parse(updated)
+    except ValueError:
+        continue
+
+    if now - updated > max_date_diff:
+        continue
 
     send_entry(title, link)
 
