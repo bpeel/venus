@@ -95,7 +95,7 @@ def send_entry(title, link):
     send_to_telegram(title, link)
     send_to_mastodon(title, link)
     send_to_twitter(title, link)
-    send_to_facebook(title, link)
+    #send_to_facebook(title, link)
 
 def get_link(root):
     for link in root.findall("./{http://www.w3.org/2005/Atom}link"):
