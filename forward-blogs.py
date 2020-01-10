@@ -12,10 +12,12 @@ import re
 import glob
 import xml.etree.ElementTree as ET
 import twitter
+import facebook
 import datetime
 import dateutil.parser
 
 twitter_api = None
+fb_api = None
 
 class SendMessageException(Exception):
     pass
@@ -80,10 +82,20 @@ def send_to_twitter(title, link):
 
     twitter_api.PostUpdate("{}\n{}".format(title, link))
 
+def send_to_facebook(title, link):
+    global fb_api
+    if fb_api is None:
+        fb_api = facebook.GraphAPI(access_token=fbkeys['page_access_token'],
+                                   version="2.12")
+
+    fb_api.put_object(parent_object='me', connection_name='feed',
+                      message=title, link=link)
+
 def send_entry(title, link):
     send_to_telegram(title, link)
     send_to_mastodon(title, link)
     send_to_twitter(title, link)
+    send_to_facebook(title, link)
 
 def get_link(root):
     for link in root.findall("./{http://www.w3.org/2005/Atom}link"):
@@ -112,6 +124,10 @@ with open(mastokey_file, 'r', encoding='utf-8') as f:
 twitterkeys_file = os.path.join(conf_dir, "twitterkeys")
 with open(twitterkeys_file, 'r', encoding='utf-8') as f:
     twitterkeys = json.load(f)
+
+fbkeys_file = os.path.join(conf_dir, "fbkeys")
+with open(fbkeys_file, 'r', encoding='utf-8') as f:
+    fbkeys = json.load(f)
 
 urlbase = "https://api.telegram.org/bot" + apikey + "/"
 send_message_url = urlbase + "sendMessage"
