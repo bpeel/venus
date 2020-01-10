@@ -174,12 +174,12 @@ for fn in glob.glob(os.path.expanduser("~/planet/pscache/*")):
     except ValueError:
         continue
 
+    sent_links.add(link)
+
     if now - updated > max_date_diff:
         continue
 
     send_entry(title, link)
-
-    sent_links.add(link)
 
 with open(os.path.expanduser("~/.sent-links"), "w") as f:
     for link in sent_links:
