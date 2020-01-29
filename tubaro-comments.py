@@ -12,6 +12,16 @@ import re
 import glob
 import xml.etree.ElementTree as ET
 import email.utils
+import sqlite3
+
+COMMENT_DB_SCHEMA = """
+create table if not exists comment (
+ video text not null,
+ num integer not null,
+ message_id integer not null,
+ primary key (video, num)
+)
+"""
 
 class SendMessageException(Exception):
     pass
@@ -31,12 +41,48 @@ def send_message(args):
         if rep['ok'] is not True:
             raise SendMessageException("Unexpected response from "
                                        "sendMessage request")
+        return rep['result']['message_id']
     except KeyError as e:
         raise SendMessageException(e)
 
 def get_feed():
         req = urllib.request.Request("https://tubaro.aperu.net/comments/feed/")
         return ET.parse(io.TextIOWrapper(urllib.request.urlopen(req), 'utf-8'))
+
+def get_comment_db():
+    global comment_db
+    global comment_db_cursor
+    global comment_db_filename
+
+    if comment_db is None:
+        comment_db = sqlite3.connect(comment_db_filename)
+
+    if comment_db_cursor is None:
+        comment_db_cursor = comment_db.cursor()
+        comment_db_cursor.execute(COMMENT_DB_SCHEMA)
+        comment_db.commit()
+
+    return comment_db_cursor
+
+def split_comment_url(comment_url):
+    m = re.match(r'https?://[a-z\.]+/v/([^/]+)/#comment-(\d+)$', comment_url)
+
+    if m is None:
+        return None
+
+    return m.group(1), int(m.group(2))
+
+def add_comment_id(comment_url, comment_id):
+    parts = split_comment_url(comment_url)
+    if parts is None:
+        return
+
+    c = get_comment_db()
+    c.execute("insert or ignore "
+              "into comment(video, num, message_id) "
+              "values (?, ?, ?)",
+              (parts[0], parts[1], comment_id))
+    comment_db.commit()
 
 conf_dir = os.path.expanduser("~/.esperantose")
 
@@ -59,6 +105,10 @@ root = get_feed().getroot()
 
 best_date = 0
 messages = []
+
+comment_db = None
+comment_db_cursor = None
+comment_db_filename = os.path.join(conf_dir, "tubaro-comments.db")
 
 for item in root.findall("./channel/item"):
     pub_date_element = item.find("./pubDate")
@@ -104,25 +154,31 @@ for item in root.findall("./channel/item"):
         title_text = "Ligilo"
 
     link = item.find("./link")
+    link_url = None
+
     if link is not None:
+        link_url = link.text
+
         parts.append("<a href=\"{}\">{}</a>".
-                     format(html.escape(link.text, quote=True),
+                     format(html.escape(link_url, quote=True),
                             title_text))
     elif title_element:
         parts.append("<b>{}</b>".format(title_text))
 
-    messages.append((pub_date, "\n\n".join(parts)))
+    messages.append((pub_date, "\n\n".join(parts), link_url))
 
 messages.sort()
 
-for pub_date, message in messages:
+for pub_date, message, link_url in messages:
     args = {
         'chat_id' : channel_name,
         'text': message,
         'parse_mode' : 'HTML'
     }
 
-    send_message(args)
+    message_id = send_message(args)
+    if link_url is not None:
+        add_comment_id(link_url, message_id)
 
 with open(comment_date_file, "w") as f:
     print(max(last_comment_date, best_date), file=f)
