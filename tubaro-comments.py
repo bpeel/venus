@@ -84,6 +84,61 @@ def add_comment_id(comment_url, comment_id):
               (parts[0], parts[1], comment_id))
     comment_db.commit()
 
+def get_comment_parent(comment_url):
+    parts = split_comment_url(comment_url)
+    if parts is None:
+        return None
+
+    if re.search(r"['\"\]]", comment_url):
+        return None
+
+    try:
+        req = urllib.request.Request(comment_url)
+        lines = list(io.TextIOWrapper(urllib.request.urlopen(req), 'utf-8'))
+    except Exception(e):
+        return None
+
+    stack = []
+    start_re = re.compile(r'\s*<li\s+id="comment-(\d+)"')
+    end_re = re.compile(r'\s*</li>\s*<!--\s*#comment-##\s*-->')
+
+    for line in lines:
+        md = start_re.match(line)
+        if md:
+            id = int(md.group(1))
+            if id == parts[1]:
+                if len(stack) > 0:
+                    return stack[-1]
+                else:
+                    return None
+            stack.append(id)
+            continue
+        md = end_re.match(line)
+        if md:
+            if len(stack) <= 0:
+                return None
+            stack.pop()
+            continue
+
+def get_reply_id(comment_url):
+    parts = split_comment_url(comment_url)
+    if parts is None:
+        return
+
+    parent_id = get_comment_parent(comment_url)
+    if parent_id is None:
+        return
+
+    c = get_comment_db()
+    c.execute("select message_id from comment where video=? and num=?",
+              (parts[0], parent_id))
+
+    res = c.fetchone()
+    if res is None:
+        return None
+
+    return int(res[0])
+
 conf_dir = os.path.expanduser("~/.esperantose")
 
 apikey_file = os.path.join(conf_dir, "apikey")
@@ -175,6 +230,11 @@ for pub_date, message, link_url in messages:
         'text': message,
         'parse_mode' : 'HTML'
     }
+
+    if link_url is not None:
+        reply_id = get_reply_id(link_url)
+        if reply_id is not None:
+            args['reply_to_message_id'] = reply_id
 
     message_id = send_message(args)
     if link_url is not None:
