@@ -182,6 +182,30 @@ def _end_planet_source(self):
     context.sources.append(context.source)
     del context['source']
 
+def _sort_key_esperanto(s):
+    ch_map = {
+        0x0125: ord('h'),
+        0x015d: ord('s'),
+        0x011d: ord('g'),
+        0x0109: ord('c'),
+        0x0135: ord('j'),
+        0x016d: ord('u')
+    }
+
+    def map_ch(ch):
+        ch = ord(ch.lower())
+        try:
+            m = ch_map[ch]
+            return (m - ord('a')) * 2 + 1
+        except KeyError:
+            if ch in range(ord('a'), ord('z') + 1):
+                return (ch - ord('a')) * 2
+            else:
+                return ch + 26 * 2
+
+    a = [map_ch(ch) for ch in unicode(s, "utf-8")]
+    return a
+
 def template_info(source):
     """ get template information from a feedparser output """
 
@@ -197,12 +221,9 @@ def template_info(source):
     # apply rules to convert feed parser output to htmltmpl input
     output = {'Channels': [], 'Items': []}
     output.update(tmpl_mapper(data.feed, Base))
-    sources = []
-    for feed in data.feed.get('sources',[]):
-        source = tmpl_mapper(feed, Base)
-        sources.append([source.get('name'), source])
-    sources.sort()
-    output['Channels'] = [source for name,source in sources]
+    sources = [tmpl_mapper(feed, Base) for feed in data.feed.get('sources',[])]
+    sources.sort(key=lambda x: _sort_key_esperanto(x.get('name', '')))
+    output['Channels'] = sources
     for entry in data.entries:
         output['Items'].append(tmpl_mapper(entry, Items))
 
