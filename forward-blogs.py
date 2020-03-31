@@ -163,6 +163,8 @@ for fn in glob.glob(os.path.expanduser("~/planet/pscache/*")):
         continue
 
     title = "".join(title.itertext())
+    if not re.search(r'\S', title):
+        continue
 
     updated = root.find("./{http://www.w3.org/2005/Atom}updated")
     if updated is None:
