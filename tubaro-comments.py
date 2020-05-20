@@ -190,7 +190,8 @@ for item in root.findall("./channel/item"):
         no_p = re.sub('</p>', "\n\n", description.text)
         no_tags = re.sub(r'<[^>]+>', '', no_p)
         no_ents = html.unescape(no_tags)
-        parts.append(html.escape(no_ents.strip()))
+        no_reply = re.sub(r'^\s*Responde al .*\n*', '', no_ents)
+        parts.append(html.escape(no_reply.strip()))
 
     title_element = item.find("./title")
     if title_element is not None:
