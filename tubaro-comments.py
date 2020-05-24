@@ -32,9 +32,9 @@ def send_message(args):
                                      json.dumps(args).encode('utf-8'))
         req.add_header('Content-Type', 'application/json; charset=utf-8')
         rep = json.load(io.TextIOWrapper(urllib.request.urlopen(req), 'utf-8'))
-    except urllib.error.URLError as e:
-        raise SendMessageException(e)
-    except json.JSONDecodeError as e:
+    except (urllib.error.URLError,
+            urllib.error.HTTPError,
+            json.JSONDecodeError) as e:
         raise SendMessageException(e)
 
     try:
