@@ -237,7 +237,17 @@ for pub_date, message, link_url in messages:
         if reply_id is not None:
             args['reply_to_message_id'] = reply_id
 
-    message_id = send_message(args)
+    while True:
+        try:
+            message_id = send_message(args)
+        except SendMessageException as e:
+            try:
+                args.pop('reply_to_message_id')
+                continue
+            except KeyError:
+                raise e
+        break
+
     if link_url is not None:
         add_comment_id(link_url, message_id)
 
