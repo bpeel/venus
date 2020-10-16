@@ -15,6 +15,7 @@ import twitter
 import facebook
 import datetime
 import dateutil.parser
+import subprocess
 
 twitter_api = None
 fb_api = None
@@ -91,12 +92,6 @@ def send_to_facebook(title, link):
     fb_api.put_object(parent_object='me', connection_name='feed',
                       message=title, link=link)
 
-def send_entry(title, link):
-    send_to_telegram(title, link)
-    send_to_mastodon(title, link)
-    send_to_twitter(title, link)
-    #send_to_facebook(title, link)
-
 def get_link(root):
     for link in root.findall("./{http://www.w3.org/2005/Atom}link"):
         rel = link.get("rel", "alternate")
@@ -110,6 +105,21 @@ def get_link(root):
         return link
     
     return None
+
+if len(sys.argv) != 2:
+    exit_code = 0
+
+    for mode in ['telegram', 'mastodon', 'twitter']:
+        rc = subprocess.run([sys.argv[0], mode])
+        if rc != 0:
+            exit_code = 1
+
+    sys.exit(exit_code)
+    assert(False)
+
+mode = sys.argv[1]
+send_entry = globals()['send_to_{}'.format(mode)]
+sent_links_file = os.path.expanduser("~/.sent-links-" + mode)
 
 conf_dir = os.path.expanduser("~/.esperantose")
 
@@ -136,7 +146,7 @@ channel_name = "@blogaro"
 masto_url = "https://tvitero.com/api/v1/statuses"
 
 try:
-    with open(os.path.expanduser("~/.sent-links")) as f:
+    with open(sent_links_file) as f:
         sent_links = set(line.rstrip() for line in f)
 except FileNotFoundError:
     sent_links = set()
@@ -183,6 +193,6 @@ for fn in glob.glob(os.path.expanduser("~/planet/pscache/*")):
 
     send_entry(title, link)
 
-with open(os.path.expanduser("~/.sent-links"), "w") as f:
+with open(sent_links_file, "w") as f:
     for link in sent_links:
         print(link, file=f)
