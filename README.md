@@ -1,5 +1,27 @@
-Planet
-------
+## Blogoj
+
+Ĉi tiu deponejo estas forko de [Planet
+Venus](https://github.com/rubys/venus) kun ekstraj dosieroj por regi
+la retejon de [Blogaro](http://blogoj.gemelo.org/).
+
+La ĉefa dosiero estas [blogoj.ini](blogoj.ini) kiu enhavas la liston
+de blogoj. Anakaŭ estas [etoso](themes/esperanto). Ĝi simple estas la
+defaŭlta etoso kun traduko al Esperanto kaj ligiloj al la sociaj
+retoj.
+
+Oni povas rekrei la retejon per la jena komando:
+
+    python2 planet.py blogoj.ini
+
+Por testado, antaŭ ol ruli tiun komandon estus bone ŝanĝi la
+`output_dir` en `blogoj.ini`.
+
+La deponejo ankaŭ havas la skripton
+[forward-blogs.py](forward-blogs.py) kiu plusendas ligilojn al la
+artikoloj al Telegram, Mastodon kaj Twitter. Ĝi ankaŭ havas kodon por
+Facebook sed ĝi ne tre bone funkcias do ĝi estas malŝaltita.
+
+## Planet
 
 Planet is a flexible feed aggregator. It downloads news feeds published by
 web sites and aggregates their content together into a single combined feed,
