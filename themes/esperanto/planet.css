@@ -148,3 +148,9 @@ a:hover {
 	text-decoration: underline !important;
 	color: blue !important;
 }
+
+img {
+	max-width: 60vw;
+	height: auto;
+	object-fit: contain;
+}
