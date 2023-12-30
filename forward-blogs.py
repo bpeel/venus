@@ -158,7 +158,12 @@ for fn in glob.glob(os.path.expanduser("~/planet/pscache/*")):
     if not os.path.isfile(fn):
         continue
 
-    tree = ET.parse(fn)
+    try:
+        tree = ET.parse(fn)
+    except ET.ParseError as e:
+        print(f"Error parsing {fn}: {e}", file=sys.stderr)
+        continue
+
     root = tree.getroot()
 
     link = get_link(root)
