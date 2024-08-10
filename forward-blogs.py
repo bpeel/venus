@@ -109,7 +109,7 @@ def get_link(root):
 if len(sys.argv) != 2:
     exit_code = 0
 
-    for mode in ['telegram', 'mastodon', 'twitter']:
+    for mode in ['telegram', 'mastodon']:
         rc = subprocess.run([sys.argv[0], mode])
         if rc != 0:
             exit_code = 1
